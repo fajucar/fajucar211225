@@ -62,8 +62,9 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
     }> = []
 
     if (mobile) {
-      // No mobile: WalletConnect é sempre a opção principal
-      if (hasWalletConnect) {
+      // No mobile: sempre mostrar opções, não filtrar por "installed"
+      // WalletConnect é sempre a opção principal se disponível
+      if (hasWalletConnect && wcConnector) {
         list.push({
           id: 'walletconnect',
           name: 'WalletConnect',
@@ -73,43 +74,65 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           type: 'walletConnect',
           mobileLabel: 'Abrir carteira',
         })
+
+        // No mobile, todas as carteiras abrem via WalletConnect
+        // Não checamos instalação (apps mobile não expõem window.ethereum)
+        list.push({
+          id: 'metamask-wc',
+          name: 'MetaMask',
+          recommended: false,
+          installed: true, // Sempre disponível via WalletConnect
+          connector: wcConnector,
+          type: 'walletConnect',
+          mobileLabel: 'Abrirá via WalletConnect',
+        })
+
+        list.push({
+          id: 'coinbase-wc',
+          name: 'Coinbase Wallet',
+          recommended: false,
+          installed: true,
+          connector: wcConnector,
+          type: 'walletConnect',
+          mobileLabel: 'Abrirá via WalletConnect',
+        })
+
+        list.push({
+          id: 'okx-wc',
+          name: 'OKX Wallet',
+          recommended: false,
+          installed: true,
+          connector: wcConnector,
+          type: 'walletConnect',
+          mobileLabel: 'Abrirá via WalletConnect',
+        })
+
+        // Rabby também via WalletConnect
+        list.push({
+          id: 'rabby-wc',
+          name: 'Rabby Wallet',
+          recommended: false,
+          installed: true,
+          connector: wcConnector,
+          type: 'walletConnect',
+          mobileLabel: 'Abrirá via WalletConnect',
+        })
+      } else {
+        // Se WalletConnect não estiver disponível, ainda mostrar opções genéricas
+        // Isso não deveria acontecer em produção, mas garante que o modal não fique vazio
+        const injectedConnector = connectors.find(c => c.type === 'injected')
+        if (injectedConnector) {
+          list.push({
+            id: 'injected-mobile',
+            name: 'Connect Wallet',
+            recommended: true,
+            installed: true,
+            connector: injectedConnector,
+            type: 'injected',
+            mobileLabel: 'Use seu navegador',
+          })
+        }
       }
-
-      // No mobile, não checamos instalação de extensões (apps mobile não expõem isso)
-      // Mas oferecemos opções para abrir via WalletConnect
-      
-      // MetaMask via WalletConnect
-      list.push({
-        id: 'metamask-wc',
-        name: 'MetaMask',
-        recommended: false,
-        installed: true, // Sempre disponível via WalletConnect
-        connector: wcConnector, // Usa WalletConnect para abrir
-        type: 'walletConnect',
-        mobileLabel: 'Abrir via WalletConnect',
-      })
-
-      // Coinbase via WalletConnect
-      list.push({
-        id: 'coinbase-wc',
-        name: 'Coinbase Wallet',
-        recommended: false,
-        installed: true,
-        connector: wcConnector,
-        type: 'walletConnect',
-        mobileLabel: 'Abrir via WalletConnect',
-      })
-
-      // OKX via WalletConnect
-      list.push({
-        id: 'okx-wc',
-        name: 'OKX Wallet',
-        recommended: false,
-        installed: true,
-        connector: wcConnector,
-        type: 'walletConnect',
-        mobileLabel: 'Abrir via WalletConnect',
-      })
     } else {
       // Desktop: lógica original (detectar instalação de extensões)
       const hasMetaMask = isInstalled((p) => Boolean(p?.isMetaMask))
@@ -201,7 +224,9 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
   if (!isOpen) return null
 
   const handleConnect = async (wallet: typeof wallets[0]) => {
-    if (!wallet.connector || !wallet.installed) return
+    // No mobile, não filtrar por installed (sempre permitir tentar conectar)
+    if (!wallet.connector) return
+    if (!mobile && !wallet.installed) return
     
     try {
       await connect({ connector: wallet.connector })
@@ -262,17 +287,22 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
                 )}
               </div>
             ) : (
-              wallets.map((w) => (
+              wallets.map((w) => {
+                // No mobile, sempre habilitar (não filtrar por installed)
+                const isDisabled = mobile ? isPending : (isPending || !w.installed)
+                const isInstalledOrMobile = mobile ? true : w.installed
+                
+                return (
                 <button
                   key={w.id}
                   onClick={() => handleConnect(w)}
-                  disabled={isPending || !w.installed}
+                  disabled={isDisabled}
                   className={[
                     'w-full rounded-lg border px-4 py-3 text-left transition',
-                    w.installed
+                    isInstalledOrMobile
                       ? 'border-slate-700 hover:border-slate-500 hover:bg-slate-800 active:scale-[0.98]'
                       : 'cursor-not-allowed border-slate-800 bg-slate-950/40 opacity-70',
-                    w.recommended && w.installed ? 'border-cyan-500/50 bg-cyan-500/5' : '',
+                    w.recommended && isInstalledOrMobile ? 'border-cyan-500/50 bg-cyan-500/5' : '',
                   ].join(' ')}
                 >
                   <div className="flex items-center justify-between">
@@ -299,7 +329,8 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
                     <span className="text-slate-400">↗</span>
                   </div>
                 </button>
-              ))
+                )
+              })
             )}
           </div>
         </div>
