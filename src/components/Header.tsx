@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, Globe, Zap, Twitter, LogOut, ChevronDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Wallet, Globe, Zap, Twitter, LogOut, ChevronDown, Image } from 'lucide-react';
 import { useArcWeb3 } from '../hooks/useArcWeb3';
 import { ARC_TESTNET_CHAIN_ID } from '../constants';
 
@@ -65,6 +66,17 @@ const Header: React.FC = () => {
         {/* Right Actions */}
         <div className="flex items-center gap-4">
           
+          {/* My NFTs Link */}
+          {isConnected && (
+            <Link
+              to="/my-nfts"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 hover:text-cyan-400 transition-all text-sm font-medium border border-slate-700"
+            >
+              <Image className="w-4 h-4" />
+              <span>My NFTs</span>
+            </Link>
+          )}
+
           {/* Social */}
           <a 
             href="https://x.com/Fajucar_xyz" 
@@ -117,6 +129,14 @@ const Header: React.FC = () => {
                         </p>
                       )}
                     </div>
+                    <Link
+                      to="/my-nfts"
+                      onClick={() => setShowDropdown(false)}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm text-cyan-400 hover:bg-cyan-500/10 transition-colors border-b border-slate-700"
+                    >
+                      <Image className="w-4 h-4" />
+                      My NFTs
+                    </Link>
                     {!isCorrectNetwork && (
                       <button
                         onClick={() => { switchNetwork(); setShowDropdown(false); }}

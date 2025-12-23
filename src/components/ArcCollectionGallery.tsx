@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useWallet } from '../contexts/WalletContext';
 import { mintImageNFT } from '../utils/contracts';
 import { ARC_COLLECTION } from '../config/arcCollection';
-import { ARC_TESTNET } from '../config/contracts';
+import { ARC_TESTNET, CONTRACT_ADDRESSES } from '../config/contracts';
 import toast from 'react-hot-toast';
+import { Copy, ExternalLink } from 'lucide-react';
 
 export function ArcCollectionGallery() {
   const { address, provider, isConnected, chainId } = useWallet();
@@ -33,10 +34,65 @@ export function ArcCollectionGallery() {
       toast.loading(`Minting ${item.name}...`, { id: 'minting' });
       
       const tokenId = await mintImageNFT(provider, item.tokenURI);
+      const contractAddress = CONTRACT_ADDRESSES.GIFT_CARD_NFT;
+      const explorerUrl = `https://testnet.arcscan.app/token/${contractAddress}?a=${tokenId.toString()}`;
       
+      // Enhanced success toast with copy buttons and import instructions
       toast.success(
-        `Successfully minted ${item.name}! Token ID: ${tokenId.toString()}`,
-        { id: 'minting', duration: 5000 }
+        (t) => (
+          <div className="space-y-3">
+            <div className="font-semibold text-green-800">
+              ✅ Successfully minted {item.name}!
+            </div>
+            <div className="text-sm space-y-2">
+              <div className="flex items-center justify-between bg-green-50 p-2 rounded">
+                <span className="text-green-700">Token ID:</span>
+                <span className="font-mono text-green-800">{tokenId.toString()}</span>
+              </div>
+              <div className="flex items-center justify-between bg-green-50 p-2 rounded">
+                <span className="text-green-700">Contract:</span>
+                <span className="font-mono text-xs text-green-800">
+                  {contractAddress.slice(0, 6)}...{contractAddress.slice(-4)}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2 border-t border-green-200">
+              <a
+                href={explorerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium transition-colors flex items-center justify-center gap-1"
+                onClick={() => toast.dismiss(t.id)}
+              >
+                <ExternalLink className="w-3 h-3" />
+                View on Explorer
+              </a>
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(contractAddress);
+                    toast.success('Contract address copied!');
+                  } catch {
+                    toast.error('Failed to copy');
+                  }
+                }}
+                className="px-3 py-2 bg-green-100 hover:bg-green-200 text-green-800 rounded text-xs font-medium transition-colors"
+              >
+                <Copy className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="text-xs text-green-700 pt-2 border-t border-green-200">
+              💡 <strong>Import to MetaMask:</strong> Go to MetaMask → NFTs → Import NFT → Paste contract address and token ID
+            </div>
+          </div>
+        ),
+        { 
+          id: 'minting', 
+          duration: 10000,
+          style: {
+            maxWidth: '400px',
+          }
+        }
       );
     } catch (error: any) {
       console.error('Mint error:', error);

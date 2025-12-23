@@ -171,7 +171,7 @@ export function MyNFTsPage() {
             })
 
             const logsPromise = publicClient.getLogs({
-              address: nftContractAddress,
+              address: nftContractAddress as `0x${string}`,
               event: {
                 type: 'event',
                 name: 'Transfer',
@@ -244,11 +244,11 @@ export function MyNFTsPage() {
           for (const tokenIdStr of Array.from(receivedTokenIds)) {
             try {
               const owner = await publicClient.readContract({
-                address: nftContractAddress,
+                address: nftContractAddress as `0x${string}`,
                 abi: FajuARC_ABI,
                 functionName: 'ownerOf',
                 args: [BigInt(tokenIdStr)],
-              })
+              }) as string
               if (owner.toLowerCase() === address.toLowerCase()) {
                 tokenIds.push(BigInt(tokenIdStr))
               }
@@ -270,7 +270,7 @@ export function MyNFTsPage() {
       if (tokenIds.length === 0) {
         try {
           const totalSupply = await publicClient.readContract({
-            address: nftContractAddress,
+            address: nftContractAddress as `0x${string}`,
             abi: FajuARC_ABI,
             functionName: 'totalSupply',
           })
@@ -278,11 +278,11 @@ export function MyNFTsPage() {
           for (let i = 0; i < totalNum; i++) {
             try {
               const owner = await publicClient.readContract({
-                address: nftContractAddress,
+                address: nftContractAddress as `0x${string}`,
                 abi: FajuARC_ABI,
                 functionName: 'ownerOf',
                 args: [BigInt(i)],
-              })
+              }) as string
               if (owner.toLowerCase() === address.toLowerCase()) {
                 tokenIds.push(BigInt(i))
               }
@@ -302,13 +302,13 @@ export function MyNFTsPage() {
           try {
             const [tokenURI, owner] = await Promise.all([
               publicClient.readContract({
-                address: nftContractAddress,
+                address: nftContractAddress as `0x${string}`,
                 abi: FajuARC_ABI,
                 functionName: 'tokenURI',
                 args: [tokenId],
               }),
               publicClient.readContract({
-                address: nftContractAddress,
+                address: nftContractAddress as `0x${string}`,
                 abi: FajuARC_ABI,
                 functionName: 'ownerOf',
                 args: [tokenId],

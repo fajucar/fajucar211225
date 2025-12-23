@@ -28,10 +28,22 @@ Output goes to `dist/`.
 
 ## Vercel deploy
 
-- **Framework**: Vite
-- **Build command**: `npm run build`
-- **Output directory**: `dist`
-- Add the same variables from `.env` inside **Vercel → Settings → Environment Variables**
+### Configuração no painel da Vercel:
+
+- **Framework Preset**: Vite
+- **Build Command**: `npm run build`
+- **Output Directory**: `dist`
+- **Install Command**: `npm install`
+
+### Variáveis de ambiente:
+
+Adicione as seguintes variáveis em **Vercel → Settings → Environment Variables**:
+
+- `VITE_WALLETCONNECT_PROJECT_ID` (obrigatório)
+- `VITE_ARC_COLLECTION_ADDRESS` (obrigatório)
+- `VITE_GIFT_CARD_NFT_ADDRESS` (opcional)
+
+Consulte o arquivo `.env.example` para referência.
 
 ## Network (Arc Testnet)
 - Chain ID: `5042002`

@@ -8,6 +8,7 @@ import { WhyArc } from '@/components/Comparison'
 import { MintPage } from '@/components/Mint/MintPage'
 import { SwapPage } from '@/pages/SwapPage'
 import { PoolsPage } from '@/pages/PoolsPage'
+import { MyNFTsPage } from '@/pages/MyNFTsPage'
 import { CONTRACT_ADDRESSES } from '@/config/contracts'
 import { getAddress } from 'ethers'
 
@@ -118,6 +119,7 @@ function App() {
         <Route path="/mint" element={<MintPageWrapper />} />
         <Route path="/swap" element={<SwapPage />} />
         <Route path="/pools" element={<PoolsPage />} />
+        <Route path="/my-nfts" element={<MyNFTsPage />} />
       </Routes>
     </Layout>
   )
