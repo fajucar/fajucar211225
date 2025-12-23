@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { useAccount, useDisconnect, useEnsName, useEnsAvatar } from 'wagmi'
 import { Wallet, LogOut, Copy, ExternalLink, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { WalletModal } from './WalletModal'
+import { useWalletModal } from '@/contexts/WalletModalContext'
 import { CONSTANTS } from '@/config/constants'
 import { formatAddress } from '@/lib/formatters'
 import toast from 'react-hot-toast'
 
 export function ConnectButton() {
-  const [showModal, setShowModal] = useState(false)
+  const { openModal } = useWalletModal()
   const [showDropdown, setShowDropdown] = useState(false)
   const [copied, setCopied] = useState(false)
   
@@ -53,22 +53,15 @@ export function ConnectButton() {
 
   if (!isConnected) {
     return (
-      <>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all"
-        >
-          <Wallet className="h-5 w-5" />
-          Connect Wallet
-        </motion.button>
-
-        <WalletModal 
-          isOpen={showModal} 
-          onClose={() => setShowModal(false)} 
-        />
-      </>
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={openModal}
+        className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all"
+      >
+        <Wallet className="h-5 w-5" />
+        Connect Wallet
+      </motion.button>
     )
   }
 

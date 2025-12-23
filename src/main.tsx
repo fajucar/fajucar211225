@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { HelmetProvider } from 'react-helmet-async'
 import { config } from './config/wagmi'
+import { WalletModalProvider } from './contexts/WalletModalContext'
 import App from './App'
 import './index.css'
 
@@ -25,30 +26,32 @@ createRoot(document.getElementById('root')!).render(
       <HelmetProvider>
         <WagmiProvider config={config}>
           <QueryClientProvider client={queryClient}>
-            <App />
-            <Toaster 
-              position="top-right"
-              toastOptions={{
-                className: '',
-                style: {
-                  background: '#0f172a',
-                  color: '#fff',
-                  border: '1px solid rgba(34, 211, 238, 0.25)',
-                },
-                success: {
-                  iconTheme: {
-                    primary: '#22d3ee',
-                    secondary: '#0f172a',
+            <WalletModalProvider>
+              <App />
+              <Toaster 
+                position="top-right"
+                toastOptions={{
+                  className: '',
+                  style: {
+                    background: '#0f172a',
+                    color: '#fff',
+                    border: '1px solid rgba(34, 211, 238, 0.25)',
                   },
-                },
-                error: {
-                  iconTheme: {
-                    primary: '#ef4444',
-                    secondary: '#0f172a',
+                  success: {
+                    iconTheme: {
+                      primary: '#22d3ee',
+                      secondary: '#0f172a',
+                    },
                   },
-                },
-              }}
-            />
+                  error: {
+                    iconTheme: {
+                      primary: '#ef4444',
+                      secondary: '#0f172a',
+                    },
+                  },
+                }}
+              />
+            </WalletModalProvider>
           </QueryClientProvider>
         </WagmiProvider>
       </HelmetProvider>

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
-import { useAccount, usePublicClient, useConnect } from 'wagmi'
+import { useState, useEffect, useRef } from 'react'
+import { useAccount, usePublicClient } from 'wagmi'
 import { getAddress } from 'viem'
 import { CONTRACT_ADDRESSES } from '@/config/contracts'
 import { Loader2, RefreshCw, ExternalLink, Copy, CheckCircle2, Image as ImageIcon, Info, Wallet } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useWalletModal } from '@/contexts/WalletModalContext'
 import FajuARC_ABI from '@/abis/FajuARC.json'
 
 interface NFTInfo {
@@ -32,14 +33,22 @@ function ipfsToHttp(uri: string): string {
   return uri
 }
 
+// Helper para detectar mobile
+function isMobile(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia('(pointer: coarse)').matches || 
+         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+}
+
 export function MyNFTsPage() {
   const { address, isConnected } = useAccount()
   const publicClient = usePublicClient()
-  const { connect, connectors, isPending: isConnecting } = useConnect()
+  const { openModal } = useWalletModal()
   const [nfts, setNfts] = useState<NFTInfo[]>([])
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const [showImportInstructions, setShowImportInstructions] = useState(false)
+  const autoPromptedRef = useRef(false)
 
   // Priorizar VITE_ARC_COLLECTION_ADDRESS, fallback para VITE_GIFT_CARD_NFT_ADDRESS
   const arcCollectionEnv = import.meta.env.VITE_ARC_COLLECTION_ADDRESS
@@ -346,6 +355,25 @@ export function MyNFTsPage() {
     }
   }, [isConnected, address, publicClient, nftContractAddress])
 
+  // Auto-abrir modal no mobile quando não conectado (apenas uma vez)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const mobile = isMobile()
+    const alreadyPrompted = sessionStorage.getItem('myNftsAutoPrompted') === 'true'
+    
+    if (mobile && !isConnected && !alreadyPrompted && !autoPromptedRef.current) {
+      // Pequeno delay para garantir que a página carregou
+      const timer = setTimeout(() => {
+        openModal()
+        sessionStorage.setItem('myNftsAutoPrompted', 'true')
+        autoPromptedRef.current = true
+      }, 500)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [isConnected, openModal])
+
   const copyToClipboard = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -357,12 +385,6 @@ export function MyNFTsPage() {
     }
   }
 
-  const handleConnect = () => {
-    if (connectors.length > 0) {
-      connect({ connector: connectors[0] })
-    }
-  }
-
   if (!isConnected) {
     return (
       <div className="max-w-6xl mx-auto py-12 px-4">
@@ -370,12 +392,11 @@ export function MyNFTsPage() {
           <h2 className="text-2xl font-bold mb-4">My NFTs</h2>
           <p className="text-slate-400 mb-6">Conecte sua wallet para ver seus NFTs</p>
           <button
-            onClick={handleConnect}
-            disabled={isConnecting || connectors.length === 0}
+            onClick={openModal}
             className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Wallet className="w-5 h-5" />
-            {isConnecting ? 'Conectando...' : 'Conectar Wallet'}
+            Conectar Wallet
           </button>
         </div>
       </div>
