@@ -75,9 +75,23 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
     }> = []
 
     if (mobile) {
-      // On mobile: WalletConnect is the primary option
-      // Only show WalletConnect options if projectId is configured AND not disabled by circuit breaker
-      if (hasWalletConnect && wcConnector && WALLETCONNECT_PROJECT_ID && !walletConnectDisabled) {
+      // On mobile: if WalletConnect is disabled, show only injected wallets (MetaMask)
+      if (walletConnectDisabled) {
+        // When WalletConnect is disabled, show only MetaMask (injected) if available
+        const injectedConnector = connectors.find(c => c.type === 'injected')
+        if (injectedConnector) {
+          list.push({
+            id: 'metamask-injected',
+            name: 'MetaMask',
+            recommended: false, // No "Recommended" when WalletConnect is disabled
+            installed: true,
+            connector: injectedConnector,
+            type: 'injected',
+            mobileLabel: 'Use MetaMask in-app browser',
+          })
+        }
+      } else if (hasWalletConnect && wcConnector && WALLETCONNECT_PROJECT_ID) {
+        // WalletConnect is enabled: show WalletConnect options
         // Main WalletConnect option
         list.push({
           id: 'walletconnect',
@@ -131,7 +145,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           mobileLabel: 'Open via WalletConnect',
         })
       }
-      // If WalletConnect is not configured, list will be empty and show friendly message
+      // If WalletConnect is not configured and not disabled, list will be empty and show friendly message
     } else {
       // Desktop: lógica original (detectar instalação de extensões)
       const hasMetaMask = isInstalled((p) => Boolean(p?.isMetaMask))
@@ -189,7 +203,8 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
       }
 
       // WalletConnect no desktop (depois dos injected)
-      if (hasWalletConnect) {
+      // Don't show WalletConnect if disabled by circuit breaker
+      if (hasWalletConnect && !walletConnectDisabled) {
         list.push({
           id: 'walletconnect',
           name: 'WalletConnect',
@@ -218,7 +233,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
     }
 
     return list
-  }, [isOpen, connectors, mobile])
+  }, [isOpen, connectors, mobile, walletConnectDisabled])
 
   if (!isOpen) return null
 
@@ -368,6 +383,14 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
             <div className="mb-4 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
               <p className="text-sm text-cyan-300">
                 On mobile, use WalletConnect to open your installed wallet
+              </p>
+            </div>
+          )}
+          
+          {mobile && walletConnectDisabled && wallets.length > 0 && (
+            <div className="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p className="text-sm text-blue-300">
+                Use the MetaMask in-app browser or another wallet.
               </p>
             </div>
           )}
