@@ -14,23 +14,16 @@ const hasValidProjectId = walletConnectProjectId &&
                           typeof walletConnectProjectId === 'string' && 
                           walletConnectProjectId.trim().length > 0
 
-// Error handling for missing projectId
-if (!hasValidProjectId) {
-  const isProduction = (import.meta.env as { MODE?: string }).MODE === 'production'
-  const errorMsg = '⚠️ [wagmi] WalletConnect is not configured (missing VITE_WALLETCONNECT_PROJECT_ID).'
-  const helpMsg = 'Please configure VITE_WALLETCONNECT_PROJECT_ID in your environment variables. Create a project at https://cloud.walletconnect.com'
-  
-  if (isProduction) {
-    console.error(errorMsg)
-    console.error(helpMsg)
-  } else {
-    console.warn(errorMsg)
-    console.warn(helpMsg)
-  }
+// DEV-only warning if env is missing (not shown in production to avoid console noise)
+if (!hasValidProjectId && (import.meta.env as { MODE?: string }).MODE === 'development') {
+  console.warn('⚠️ [wagmi] WalletConnect is not configured (missing VITE_WALLETCONNECT_PROJECT_ID).')
+  console.warn('⚠️ [wagmi] Please configure VITE_WALLETCONNECT_PROJECT_ID in your environment variables.')
+  console.warn('⚠️ [wagmi] Create a project at https://cloud.walletconnect.com')
 }
 
-// Only create WalletConnect connector if projectId is valid
+// Only create WalletConnect connector if projectId is defined (truthy)
 // This prevents "Cannot read properties of undefined (reading 'init')" error
+// walletConnect() NEVER receives undefined/null/empty string
 const walletConnectConnector = hasValidProjectId
   ? walletConnect({
       projectId: walletConnectProjectId.trim(),
@@ -44,8 +37,10 @@ const walletConnectConnector = hasValidProjectId
     })
   : null
 
-// Export projectId for use in components (only if valid)
-export const WALLETCONNECT_PROJECT_ID = hasValidProjectId ? walletConnectProjectId.trim() : ''
+// Export projectId as string | undefined (NOT empty string)
+export const WALLETCONNECT_PROJECT_ID: string | undefined = hasValidProjectId 
+  ? walletConnectProjectId.trim() 
+  : undefined
 
 // Priorizar WalletConnect quando window.ethereum não existir (mobile/outros navegadores)
 // No desktop com MetaMask, priorizar injected (MetaMask)

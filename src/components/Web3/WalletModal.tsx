@@ -67,6 +67,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
     if (mobile) {
       // On mobile: WalletConnect is the primary option
+      // Only show WalletConnect options if projectId is configured
       if (hasWalletConnect && wcConnector && WALLETCONNECT_PROJECT_ID) {
         // Main WalletConnect option
         list.push({
@@ -121,7 +122,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           mobileLabel: 'Open via WalletConnect',
         })
       }
-      // If WalletConnect is not configured, list will be empty and show error message
+      // If WalletConnect is not configured, list will be empty and show friendly message
     } else {
       // Desktop: lógica original (detectar instalação de extensões)
       const hasMetaMask = isInstalled((p) => Boolean(p?.isMetaMask))
@@ -217,10 +218,10 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
     setConnectError(null)
     
     // Validate WalletConnect projectId before attempting connection
-    if (!WALLETCONNECT_PROJECT_ID || WALLETCONNECT_PROJECT_ID.trim().length === 0) {
-      const errorMsg = 'WalletConnect is not configured. Please set VITE_WALLETCONNECT_PROJECT_ID'
+    if (!WALLETCONNECT_PROJECT_ID) {
+      const errorMsg = 'WalletConnect is not configured. Please set VITE_WALLETCONNECT_PROJECT_ID in Vercel environment variables.'
       setConnectError(errorMsg)
-      toast.error(errorMsg)
+      toast.error('WalletConnect not configured')
       setIsConnecting(false)
       return
     }
@@ -236,19 +237,19 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
         console.log('[WalletModal] Mobile: Using WalletConnect connector for', wallet.name)
       } else {
         console.error('[WalletModal] Mobile: WalletConnect connector not found or invalid!')
-        const errorMsg = 'WalletConnect is not available. Please configure VITE_WALLETCONNECT_PROJECT_ID'
+        const errorMsg = 'WalletConnect connector not available. Please configure VITE_WALLETCONNECT_PROJECT_ID'
         setConnectError(errorMsg)
-        toast.error(errorMsg)
+        toast.error('WalletConnect not available')
         setIsConnecting(false)
         return
       }
     }
     
-    // Final validation: ensure connector exists before attempting connection
+    // Final validation: ensure connector exists and has id before attempting connection
     if (!connectorToUse || !connectorToUse.id) {
       const errorMsg = 'Wallet connector not available or not initialized'
       setConnectError(errorMsg)
-      toast.error(errorMsg)
+      toast.error('Connector not available')
       setIsConnecting(false)
       return
     }
@@ -306,7 +307,22 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
         {/* Content - scrollable */}
         <div className={`flex-1 overflow-y-auto ${mobile ? 'p-4' : 'p-4'}`}>
-          {mobile && wallets.length > 0 && (
+          {/* Friendly message when WalletConnect is not configured */}
+          {!WALLETCONNECT_PROJECT_ID && (
+            <div className="mb-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <p className="text-sm font-medium text-amber-300 mb-1">
+                WalletConnect is not configured
+              </p>
+              <p className="text-xs text-amber-200/80">
+                Please configure VITE_WALLETCONNECT_PROJECT_ID in Vercel → Settings → Environment Variables
+              </p>
+              <p className="text-xs text-amber-200/60 mt-1">
+                Create a project at <a href="https://cloud.walletconnect.com" target="_blank" rel="noopener noreferrer" className="underline">cloud.walletconnect.com</a>
+              </p>
+            </div>
+          )}
+          
+          {mobile && wallets.length > 0 && WALLETCONNECT_PROJECT_ID && (
             <div className="mb-4 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
               <p className="text-sm text-cyan-300">
                 On mobile, use WalletConnect to open your installed wallet
@@ -317,21 +333,27 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           <div className="space-y-3">
             {wallets.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
-                <p className="font-semibold text-red-400 mb-2">WalletConnect is not configured</p>
                 {!WALLETCONNECT_PROJECT_ID ? (
                   <>
+                    <p className="font-semibold text-amber-400 mb-2">WalletConnect Configuration Required</p>
                     <p className="text-sm mb-2">Missing VITE_WALLETCONNECT_PROJECT_ID environment variable.</p>
                     <p className="text-xs text-slate-500">
-                      Please configure it in Vercel → Settings → Environment Variables
+                      Configure it in Vercel → Settings → Environment Variables
                     </p>
                     <p className="text-xs text-slate-500 mt-1">
-                      Create a project at https://cloud.walletconnect.com
+                      Create a project at <a href="https://cloud.walletconnect.com" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">cloud.walletconnect.com</a>
                     </p>
                   </>
                 ) : mobile ? (
-                  <p className="text-sm mt-2">WalletConnect is required for mobile</p>
+                  <>
+                    <p className="font-semibold text-red-400 mb-2">WalletConnect Required</p>
+                    <p className="text-sm mt-2">WalletConnect is required for mobile connections</p>
+                  </>
                 ) : (
-                  <p className="text-sm mt-2">Please install a wallet extension</p>
+                  <>
+                    <p className="font-semibold text-slate-300 mb-2">No Wallets Available</p>
+                    <p className="text-sm mt-2">Please install a wallet extension</p>
+                  </>
                 )}
               </div>
             ) : (
