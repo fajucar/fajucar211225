@@ -54,20 +54,36 @@ export const WALLETCONNECT_PROJECT_ID: string | undefined = hasValidProjectId
   ? walletConnectProjectId.trim() 
   : undefined
 
-// Priorizar WalletConnect quando window.ethereum não existir (mobile/outros navegadores)
-// No desktop com MetaMask, priorizar injected (MetaMask)
+// Detectar mobile para priorizar WalletConnect mesmo se window.ethereum existir
+// No mobile, mesmo dentro do browser da MetaMask, devemos usar WalletConnect para abrir o app
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia('(pointer: coarse)').matches || 
+         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+}
+
 const hasInjectedWallet = typeof window !== 'undefined' && typeof window.ethereum !== 'undefined'
-const connectors = hasInjectedWallet
+const isMobile = isMobileDevice()
+
+// Priorizar WalletConnect no mobile (mesmo se window.ethereum existir)
+// No desktop, priorizar injected (MetaMask) se disponível
+const connectors = isMobile
   ? [
-      // Desktop: MetaMask injected primeiro
-      injectedConnector,
-      ...(walletConnectConnector ? [walletConnectConnector] : []),
-    ]
-  : [
-      // Mobile/sem injected: WalletConnect primeiro
+      // Mobile: WalletConnect primeiro (sempre, mesmo se window.ethereum existir)
       ...(walletConnectConnector ? [walletConnectConnector] : []),
       injectedConnector,
     ]
+  : hasInjectedWallet
+    ? [
+        // Desktop com MetaMask: injected primeiro
+        injectedConnector,
+        ...(walletConnectConnector ? [walletConnectConnector] : []),
+      ]
+    : [
+        // Desktop sem injected: WalletConnect primeiro
+        ...(walletConnectConnector ? [walletConnectConnector] : []),
+        injectedConnector,
+      ]
 
 export const config = createConfig({
   // DEP: mantenha o dApp restrito à Arc Testnet.
