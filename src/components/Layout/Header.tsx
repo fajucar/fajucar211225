@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Menu, X, ExternalLink } from 'lucide-react'
+import { Menu, X, ExternalLink, Image } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useAccount } from 'wagmi'
 import { ConnectButton } from '@/components/Web3/ConnectButton'
 import { CONSTANTS } from '@/config/constants'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -13,6 +15,7 @@ const navLinks = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { isConnected } = useAccount()
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
@@ -27,6 +30,15 @@ export function Header() {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
+          {isConnected && (
+            <Link
+              to="/my-nfts"
+              className="text-sm font-medium text-slate-300 hover:text-white transition-colors flex items-center gap-1"
+            >
+              <Image className="h-4 w-4" />
+              My NFTs
+            </Link>
+          )}
           {navLinks.map((link) => (
             <a
               key={link.label}
@@ -69,6 +81,16 @@ export function Header() {
             className="border-t border-slate-800 bg-slate-950 md:hidden"
           >
             <div className="px-4 py-4 space-y-4">
+              {isConnected && (
+                <Link
+                  to="/my-nfts"
+                  className="block py-2 text-slate-300 hover:text-white transition-colors flex items-center gap-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Image className="h-4 w-4" />
+                  My NFTs
+                </Link>
+              )}
               {navLinks.map((link) => (
                 <a
                   key={link.label}

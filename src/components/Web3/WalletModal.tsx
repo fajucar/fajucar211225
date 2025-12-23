@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useConnect, useConnectors } from 'wagmi'
 import toast from 'react-hot-toast'
 import { WALLETCONNECT_PROJECT_ID } from '@/config/wagmi'
@@ -43,9 +43,11 @@ function isMobile(): boolean {
 }
 
 export function WalletModal({ isOpen, onClose }: WalletModalProps) {
-  const { connect, isPending } = useConnect()
+  const { connectAsync, isPending } = useConnect()
   const connectors = useConnectors()
   const mobile = isMobile()
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [connectError, setConnectError] = useState<string | null>(null)
 
   // Recalcula quando o modal abre (garante detecção atualizada)
   const wallets = useMemo(() => {
@@ -211,6 +213,9 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
   if (!isOpen) return null
 
   const handleConnect = async (wallet: typeof wallets[0]) => {
+    setIsConnecting(true)
+    setConnectError(null)
+    
     // On mobile, always use WalletConnect connector
     let connectorToUse = wallet.connector
     
@@ -221,30 +226,40 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
         console.log('[WalletModal] Mobile: Using WalletConnect connector for', wallet.name)
       } else {
         console.error('[WalletModal] Mobile: WalletConnect connector not found!')
-        toast.error('WalletConnect is not available. Please configure VITE_WALLETCONNECT_PROJECT_ID')
+        const errorMsg = 'WalletConnect is not available. Please configure VITE_WALLETCONNECT_PROJECT_ID'
+        setConnectError(errorMsg)
+        toast.error(errorMsg)
+        setIsConnecting(false)
         return
       }
     }
     
     if (!connectorToUse) {
-      toast.error('Wallet connector not available')
+      const errorMsg = 'Wallet connector not available'
+      setConnectError(errorMsg)
+      toast.error(errorMsg)
+      setIsConnecting(false)
       return
     }
-    if (!mobile && !wallet.installed) return
+    if (!mobile && !wallet.installed) {
+      setIsConnecting(false)
+      return
+    }
     
     try {
       console.log('[WalletModal] Connecting with connector:', connectorToUse.type, connectorToUse.id)
-      await connect({ connector: connectorToUse })
+      await connectAsync({ connector: connectorToUse })
       console.log('[WalletModal] Connection successful')
+      // Only close modal on successful connection
       onClose()
     } catch (err: any) {
       // Don't close modal on error (better UX)
-      const errorMessage = err?.message || err?.toString() || 'Unknown error'
-      const shortReason = errorMessage.length > 50 
-        ? errorMessage.substring(0, 50) + '...' 
-        : errorMessage
+      const errorMessage = err?.shortMessage || err?.message || err?.toString() || 'Connection failed'
+      setConnectError(errorMessage)
       console.error('[WalletModal] Wallet connect error:', err)
-      toast.error(`Connection failed: ${shortReason}`)
+      toast.error(errorMessage)
+    } finally {
+      setIsConnecting(false)
     }
   }
 
@@ -310,7 +325,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
             ) : (
               wallets.map((w) => {
                 // No mobile, sempre habilitar (não filtrar por installed)
-                const isDisabled = mobile ? isPending : (isPending || !w.installed)
+                const isDisabled = isConnecting || (mobile ? false : (isPending || !w.installed))
                 const isInstalledOrMobile = mobile ? true : w.installed
                 
                 return (
@@ -320,7 +335,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
                   disabled={isDisabled}
                   className={[
                     'w-full rounded-lg border px-4 py-3 text-left transition',
-                    isInstalledOrMobile
+                    isInstalledOrMobile && !isConnecting
                       ? 'border-slate-700 hover:border-slate-500 hover:bg-slate-800 active:scale-[0.98]'
                       : 'cursor-not-allowed border-slate-800 bg-slate-950/40 opacity-70',
                     w.recommended && isInstalledOrMobile ? 'border-cyan-500/50 bg-cyan-500/5' : '',
@@ -337,13 +352,15 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
                         )}
                       </div>
                       <span className="text-sm text-slate-400">
-                        {mobile && w.mobileLabel
-                          ? w.mobileLabel
-                          : w.installed
-                            ? w.type === 'walletConnect' 
-                              ? 'Connect via QR code or deep link'
-                              : 'Installed'
-                            : 'Not installed'}
+                        {isConnecting 
+                          ? 'Connecting...'
+                          : mobile && w.mobileLabel
+                            ? w.mobileLabel
+                            : w.installed
+                              ? w.type === 'walletConnect' 
+                                ? 'Connect via QR code or deep link'
+                                : 'Installed'
+                              : 'Not installed'}
                       </span>
                     </div>
 
@@ -354,15 +371,23 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
               })
             )}
           </div>
+          
+          {/* Error message */}
+          {connectError && (
+            <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-sm text-red-400">{connectError}</p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className={`border-t border-slate-700 ${mobile ? 'p-4' : 'p-4'}`}>
           <button
             onClick={onClose}
-            className="w-full rounded-lg border border-slate-700 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+            disabled={isConnecting}
+            className="w-full rounded-lg border border-slate-700 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Cancel
+            {isConnecting ? 'Connecting...' : 'Cancel'}
           </button>
         </div>
       </div>

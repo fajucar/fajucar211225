@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   useAccount,
   useWriteContract,
@@ -6,7 +7,7 @@ import {
   useSwitchChain,
   useReadContract,
 } from 'wagmi'
-import { Sparkles, Loader2, CheckCircle2, ExternalLink, AlertTriangle } from 'lucide-react'
+import { Sparkles, Loader2, CheckCircle2, ExternalLink, AlertTriangle, Image } from 'lucide-react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { arcTestnet } from '@/config/chains'
@@ -347,17 +348,26 @@ export function MintPage({ contractAddress }: MintPageProps) {
                   )}
                 </button>
 
-                {/* Transaction Hash */}
+                {/* Transaction Hash and Navigation */}
                 {txHash && (
-                  <a
-                    href={`${CONSTANTS.LINKS.explorer}/tx/${txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 flex items-center justify-center gap-2 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
-                  >
-                    <span>View on Explorer</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                  <div className="mt-3 space-y-2">
+                    <a
+                      href={`${CONSTANTS.LINKS.explorer}/tx/${txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                    >
+                      <span>View on Explorer</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <Link
+                      to="/my-nfts"
+                      className="flex items-center justify-center gap-2 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                    >
+                      <Image className="h-3 w-3" />
+                      <span>View My NFTs</span>
+                    </Link>
+                  </div>
                 )}
               </div>
             </motion.div>

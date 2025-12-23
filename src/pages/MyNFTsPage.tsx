@@ -362,8 +362,9 @@ export function MyNFTsPage() {
     const mobile = isMobile()
     const alreadyPrompted = sessionStorage.getItem('myNftsAutoPrompted') === 'true'
     
+    // Only auto-open if: mobile, not connected, not already prompted, and ref not set
     if (mobile && !isConnected && !alreadyPrompted && !autoPromptedRef.current) {
-      // Pequeno delay para garantir que a página carregou
+      // Small delay to ensure page loaded
       const timer = setTimeout(() => {
         openModal()
         sessionStorage.setItem('myNftsAutoPrompted', 'true')
@@ -372,7 +373,9 @@ export function MyNFTsPage() {
       
       return () => clearTimeout(timer)
     }
-  }, [isConnected, openModal])
+    // Dependencies: only isConnected to avoid re-running when modal state changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected])
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
