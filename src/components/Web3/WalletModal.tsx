@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useConnect, useConnectors } from 'wagmi'
 import toast from 'react-hot-toast'
 import { WALLETCONNECT_PROJECT_ID } from '@/config/wagmi'
@@ -48,6 +48,15 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const mobile = isMobile()
   const [isConnecting, setIsConnecting] = useState(false)
   const [connectError, setConnectError] = useState<string | null>(null)
+  const [walletConnectDisabled, setWalletConnectDisabled] = useState(false)
+
+  // Check circuit breaker flag on mount and when modal opens
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const disabled = localStorage.getItem('WALLETCONNECT_DISABLED') === '1'
+      setWalletConnectDisabled(disabled)
+    }
+  }, [isOpen])
 
   // Recalcula quando o modal abre (garante detecção atualizada)
   const wallets = useMemo(() => {
@@ -67,8 +76,8 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
     if (mobile) {
       // On mobile: WalletConnect is the primary option
-      // Only show WalletConnect options if projectId is configured
-      if (hasWalletConnect && wcConnector && WALLETCONNECT_PROJECT_ID) {
+      // Only show WalletConnect options if projectId is configured AND not disabled by circuit breaker
+      if (hasWalletConnect && wcConnector && WALLETCONNECT_PROJECT_ID && !walletConnectDisabled) {
         // Main WalletConnect option
         list.push({
           id: 'walletconnect',
@@ -268,9 +277,27 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
     } catch (err: any) {
       // Don't close modal on error (better UX)
       const errorMessage = err?.shortMessage || err?.message || err?.toString() || 'Connection failed'
-      setConnectError(errorMessage)
+      const errorString = errorMessage.toLowerCase()
+      
+      // Circuit breaker: detect "init" errors and disable WalletConnect
+      if (connectorToUse.type === 'walletConnect' && 
+          (errorString.includes("reading 'init'") || 
+           errorString.includes("reading \"init\"") ||
+           errorString.includes('.init') ||
+           errorString.includes('init is not a function'))) {
+        console.error('[WalletModal] WalletConnect init error detected, disabling WalletConnect')
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('WALLETCONNECT_DISABLED', '1')
+          setWalletConnectDisabled(true)
+        }
+        const circuitBreakerMsg = 'WalletConnect failed on this device. Use MetaMask in-app browser or another wallet. You can re-enable by clearing the site cache.'
+        setConnectError(circuitBreakerMsg)
+        toast.error('WalletConnect disabled due to error')
+      } else {
+        setConnectError(errorMessage)
+        toast.error(errorMessage)
+      }
       console.error('[WalletModal] Wallet connect error:', err)
-      toast.error(errorMessage)
     } finally {
       setIsConnecting(false)
     }
@@ -307,8 +334,23 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
         {/* Content - scrollable */}
         <div className={`flex-1 overflow-y-auto ${mobile ? 'p-4' : 'p-4'}`}>
+          {/* Circuit breaker message when WalletConnect is disabled */}
+          {walletConnectDisabled && (
+            <div className="mb-4 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-sm font-medium text-red-300 mb-1">
+                WalletConnect disabled
+              </p>
+              <p className="text-xs text-red-200/80">
+                WalletConnect failed on this device. Use MetaMask in-app browser or another wallet.
+              </p>
+              <p className="text-xs text-red-200/60 mt-1">
+                You can re-enable by clearing the site cache (Settings → Clear browsing data).
+              </p>
+            </div>
+          )}
+          
           {/* Friendly message when WalletConnect is not configured */}
-          {!WALLETCONNECT_PROJECT_ID && (
+          {!WALLETCONNECT_PROJECT_ID && !walletConnectDisabled && (
             <div className="mb-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
               <p className="text-sm font-medium text-amber-300 mb-1">
                 WalletConnect is not configured
@@ -322,7 +364,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
             </div>
           )}
           
-          {mobile && wallets.length > 0 && WALLETCONNECT_PROJECT_ID && (
+          {mobile && wallets.length > 0 && WALLETCONNECT_PROJECT_ID && !walletConnectDisabled && (
             <div className="mb-4 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
               <p className="text-sm text-cyan-300">
                 On mobile, use WalletConnect to open your installed wallet
@@ -333,7 +375,18 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           <div className="space-y-3">
             {wallets.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
-                {!WALLETCONNECT_PROJECT_ID ? (
+                {walletConnectDisabled ? (
+                  <>
+                    <p className="font-semibold text-red-400 mb-2">WalletConnect Disabled</p>
+                    <p className="text-sm mb-2">WalletConnect failed on this device.</p>
+                    <p className="text-xs text-slate-500">
+                      Use MetaMask in-app browser or another wallet.
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Clear site cache to re-enable WalletConnect.
+                    </p>
+                  </>
+                ) : !WALLETCONNECT_PROJECT_ID ? (
                   <>
                     <p className="font-semibold text-amber-400 mb-2">WalletConnect Configuration Required</p>
                     <p className="text-sm mb-2">Missing VITE_WALLETCONNECT_PROJECT_ID environment variable.</p>

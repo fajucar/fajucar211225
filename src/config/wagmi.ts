@@ -8,20 +8,29 @@ const injectedConnector = injected({
 })
 
 // === WalletConnect
+// Circuit breaker: check if WalletConnect was disabled due to runtime errors
+const isWalletConnectDisabled = typeof window !== 'undefined' && 
+                                localStorage.getItem('WALLETCONNECT_DISABLED') === '1'
+
 // Ensure projectId is a valid non-empty string before initializing
 const walletConnectProjectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID
 const hasValidProjectId = walletConnectProjectId && 
                           typeof walletConnectProjectId === 'string' && 
-                          walletConnectProjectId.trim().length > 0
+                          walletConnectProjectId.trim().length > 0 &&
+                          !isWalletConnectDisabled // Circuit breaker: don't create if disabled
 
 // DEV-only warning if env is missing (not shown in production to avoid console noise)
 if (!hasValidProjectId && (import.meta.env as { MODE?: string }).MODE === 'development') {
-  console.warn('⚠️ [wagmi] WalletConnect is not configured (missing VITE_WALLETCONNECT_PROJECT_ID).')
-  console.warn('⚠️ [wagmi] Please configure VITE_WALLETCONNECT_PROJECT_ID in your environment variables.')
-  console.warn('⚠️ [wagmi] Create a project at https://cloud.walletconnect.com')
+  if (isWalletConnectDisabled) {
+    console.warn('⚠️ [wagmi] WalletConnect is disabled due to previous runtime error. Clear localStorage to re-enable.')
+  } else {
+    console.warn('⚠️ [wagmi] WalletConnect is not configured (missing VITE_WALLETCONNECT_PROJECT_ID).')
+    console.warn('⚠️ [wagmi] Please configure VITE_WALLETCONNECT_PROJECT_ID in your environment variables.')
+    console.warn('⚠️ [wagmi] Create a project at https://cloud.walletconnect.com')
+  }
 }
 
-// Only create WalletConnect connector if projectId is defined (truthy)
+// Only create WalletConnect connector if projectId is defined (truthy) AND not disabled
 // This prevents "Cannot read properties of undefined (reading 'init')" error
 // walletConnect() NEVER receives undefined/null/empty string
 const walletConnectConnector = hasValidProjectId
@@ -36,6 +45,9 @@ const walletConnectConnector = hasValidProjectId
       },
     })
   : null
+
+// Export helper to check if WalletConnect is disabled
+export const isWalletConnectDisabledFlag = isWalletConnectDisabled
 
 // Export projectId as string | undefined (NOT empty string)
 export const WALLETCONNECT_PROJECT_ID: string | undefined = hasValidProjectId 
