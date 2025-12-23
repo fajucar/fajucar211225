@@ -8,10 +8,14 @@ const injectedConnector = injected({
 })
 
 // === WalletConnect
-const walletConnectProjectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || ''
+// Ensure projectId is a valid non-empty string before initializing
+const walletConnectProjectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID
+const hasValidProjectId = walletConnectProjectId && 
+                          typeof walletConnectProjectId === 'string' && 
+                          walletConnectProjectId.trim().length > 0
 
 // Error handling for missing projectId
-if (!walletConnectProjectId) {
+if (!hasValidProjectId) {
   const isProduction = (import.meta.env as { MODE?: string }).MODE === 'production'
   const errorMsg = '⚠️ [wagmi] WalletConnect is not configured (missing VITE_WALLETCONNECT_PROJECT_ID).'
   const helpMsg = 'Please configure VITE_WALLETCONNECT_PROJECT_ID in your environment variables. Create a project at https://cloud.walletconnect.com'
@@ -25,9 +29,11 @@ if (!walletConnectProjectId) {
   }
 }
 
-const walletConnectConnector = walletConnectProjectId
+// Only create WalletConnect connector if projectId is valid
+// This prevents "Cannot read properties of undefined (reading 'init')" error
+const walletConnectConnector = hasValidProjectId
   ? walletConnect({
-      projectId: walletConnectProjectId,
+      projectId: walletConnectProjectId.trim(),
       showQrModal: true,
       metadata: {
         name: 'Arc Network',
@@ -38,8 +44,8 @@ const walletConnectConnector = walletConnectProjectId
     })
   : null
 
-// Export projectId for use in components
-export const WALLETCONNECT_PROJECT_ID = walletConnectProjectId
+// Export projectId for use in components (only if valid)
+export const WALLETCONNECT_PROJECT_ID = hasValidProjectId ? walletConnectProjectId.trim() : ''
 
 // Priorizar WalletConnect quando window.ethereum não existir (mobile/outros navegadores)
 // No desktop com MetaMask, priorizar injected (MetaMask)

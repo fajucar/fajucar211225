@@ -216,16 +216,26 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
     setIsConnecting(true)
     setConnectError(null)
     
+    // Validate WalletConnect projectId before attempting connection
+    if (!WALLETCONNECT_PROJECT_ID || WALLETCONNECT_PROJECT_ID.trim().length === 0) {
+      const errorMsg = 'WalletConnect is not configured. Please set VITE_WALLETCONNECT_PROJECT_ID'
+      setConnectError(errorMsg)
+      toast.error(errorMsg)
+      setIsConnecting(false)
+      return
+    }
+    
     // On mobile, always use WalletConnect connector
     let connectorToUse = wallet.connector
     
     if (mobile) {
-      const wcConnector = connectors.find(c => c.type === 'walletConnect')
-      if (wcConnector) {
+      const wcConnector = connectors.find(c => c.type === 'walletConnect' && c.id)
+      // Additional validation: ensure connector exists and is valid
+      if (wcConnector && wcConnector.id) {
         connectorToUse = wcConnector
         console.log('[WalletModal] Mobile: Using WalletConnect connector for', wallet.name)
       } else {
-        console.error('[WalletModal] Mobile: WalletConnect connector not found!')
+        console.error('[WalletModal] Mobile: WalletConnect connector not found or invalid!')
         const errorMsg = 'WalletConnect is not available. Please configure VITE_WALLETCONNECT_PROJECT_ID'
         setConnectError(errorMsg)
         toast.error(errorMsg)
@@ -234,13 +244,15 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
       }
     }
     
-    if (!connectorToUse) {
-      const errorMsg = 'Wallet connector not available'
+    // Final validation: ensure connector exists before attempting connection
+    if (!connectorToUse || !connectorToUse.id) {
+      const errorMsg = 'Wallet connector not available or not initialized'
       setConnectError(errorMsg)
       toast.error(errorMsg)
       setIsConnecting(false)
       return
     }
+    
     if (!mobile && !wallet.installed) {
       setIsConnecting(false)
       return
