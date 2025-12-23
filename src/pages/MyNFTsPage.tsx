@@ -270,7 +270,7 @@ export function MyNFTsPage() {
           const errorMsg = error.message || String(error)
           console.warn('⚠️ Busca por eventos falhou:', errorMsg)
           if (errorMsg.includes('limites do RPC') || errorMsg.includes('Timeout')) {
-            toast.error('Limite do RPC atingido. Alguns NFTs podem não aparecer. Tente atualizar novamente.')
+            toast.error('RPC limit reached. Some NFTs may not appear. Please refresh again.')
           }
         }
       }
@@ -340,7 +340,7 @@ export function MyNFTsPage() {
       setNfts(validNFTs)
     } catch (error: any) {
       console.error('❌ Erro ao carregar NFTs:', error)
-      toast.error(error.message || 'Erro ao carregar NFTs')
+      toast.error(error.message || 'Error loading NFTs')
       setNfts([])
     } finally {
       setLoading(false)
@@ -378,10 +378,10 @@ export function MyNFTsPage() {
     try {
       await navigator.clipboard.writeText(text)
       setCopied(label)
-      toast.success(`${label} copiado!`)
+      toast.success(`${label} copied!`)
       setTimeout(() => setCopied(null), 2000)
     } catch (err) {
-      toast.error('Erro ao copiar')
+      toast.error('Failed to copy')
     }
   }
 
@@ -390,13 +390,13 @@ export function MyNFTsPage() {
       <div className="max-w-6xl mx-auto py-12 px-4">
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-2xl p-8 text-center">
           <h2 className="text-2xl font-bold mb-4">My NFTs</h2>
-          <p className="text-slate-400 mb-6">Conecte sua wallet para ver seus NFTs</p>
+          <p className="text-slate-400 mb-6">Connect your wallet to view your NFTs</p>
           <button
             onClick={openModal}
             className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Wallet className="w-5 h-5" />
-            Conectar Wallet
+            Connect Wallet
           </button>
         </div>
       </div>
@@ -407,9 +407,9 @@ export function MyNFTsPage() {
     return (
       <div className="max-w-6xl mx-auto py-12 px-4">
         <div className="bg-amber-900/20 border border-amber-500/30 rounded-2xl p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4 text-amber-400">Contrato não configurado</h2>
+          <h2 className="text-2xl font-bold mb-4 text-amber-400">Contract not configured</h2>
           <p className="text-slate-400">
-            Configure VITE_ARC_COLLECTION_ADDRESS ou VITE_GIFT_CARD_NFT_ADDRESS no arquivo .env
+            Configure VITE_ARC_COLLECTION_ADDRESS or VITE_GIFT_CARD_NFT_ADDRESS in the .env file
           </p>
         </div>
       </div>
@@ -423,8 +423,8 @@ export function MyNFTsPage() {
           <h1 className="text-3xl md:text-4xl font-bold mb-2">My NFTs</h1>
           <p className="text-slate-400">
             {nfts.length === 0
-              ? 'Você ainda não possui NFTs'
-              : `${nfts.length} NFT${nfts.length > 1 ? 's' : ''} encontrado${nfts.length > 1 ? 's' : ''}`}
+              ? 'You don\'t have any NFTs yet'
+              : `${nfts.length} NFT${nfts.length > 1 ? 's' : ''} found`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -433,7 +433,7 @@ export function MyNFTsPage() {
             className="px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400 hover:bg-cyan-500/20 transition-colors text-sm font-medium flex items-center gap-2"
           >
             <Info className="w-4 h-4" />
-            Importar no MetaMask
+            Import to MetaMask
           </button>
           <button
             onClick={loadNFTs}
@@ -441,7 +441,7 @@ export function MyNFTsPage() {
             className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Atualizar
+            Refresh
           </button>
         </div>
       </div>
@@ -450,20 +450,20 @@ export function MyNFTsPage() {
         <div className="mb-6 bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <ImageIcon className="w-5 h-5" />
-            Como importar NFT no MetaMask
+            How to import NFT to MetaMask
           </h3>
           <ol className="space-y-2 text-sm text-slate-300">
-            <li>1. Abra o MetaMask</li>
-            <li>2. Vá em NFTs → Importar NFT</li>
-            <li>3. Cole o endereço do contrato: <code className="bg-slate-800 px-2 py-1 rounded">{nftContractAddress}</code></li>
-            <li>4. Cole o Token ID do NFT que deseja importar</li>
+            <li>1. Open MetaMask</li>
+            <li>2. Go to NFTs → Import NFT</li>
+            <li>3. Paste the contract address: <code className="bg-slate-800 px-2 py-1 rounded">{nftContractAddress}</code></li>
+            <li>4. Paste the Token ID of the NFT you want to import</li>
           </ol>
           <button
-            onClick={() => copyToClipboard(nftContractAddress, 'Contrato')}
+            onClick={() => copyToClipboard(nftContractAddress, 'Contract')}
             className="mt-4 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-white text-sm font-medium flex items-center gap-2"
           >
-            {copied === 'Contrato' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            Copiar Endereço do Contrato
+            {copied === 'Contract' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            Copy Contract Address
           </button>
         </div>
       )}
@@ -474,12 +474,12 @@ export function MyNFTsPage() {
         </div>
       ) : nfts.length === 0 ? (
         <div className="bg-slate-900/50 border border-cyan-500/20 rounded-2xl p-12 text-center">
-          <p className="text-slate-400 mb-4">Você ainda não possui NFTs mintados</p>
+          <p className="text-slate-400 mb-4">You haven't minted any NFTs yet</p>
           <a
             href="/mint"
             className="inline-block px-6 py-3 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-white font-medium transition-colors"
           >
-            Mint um NFT
+            Mint an NFT
           </a>
         </div>
       ) : (
@@ -575,15 +575,15 @@ function NFTCard({
 
       <div className="mt-4 pt-4 border-t border-slate-700 flex gap-2">
         <button
-          onClick={() => onCopy(contractAddress, 'Contrato')}
+          onClick={() => onCopy(contractAddress, 'Contract')}
           className="flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs text-slate-300 transition-colors flex items-center justify-center gap-1"
         >
-          {copied === 'Contrato' ? (
+          {copied === 'Contract' ? (
             <CheckCircle2 className="w-3 h-3 text-green-400" />
           ) : (
             <Copy className="w-3 h-3" />
           )}
-          Contrato
+          Contract
         </button>
         <button
           onClick={() => onCopy(nft.tokenId, 'Token ID')}

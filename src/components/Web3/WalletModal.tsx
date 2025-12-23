@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import { useConnect, useConnectors } from 'wagmi'
+import toast from 'react-hot-toast'
+import { WALLETCONNECT_PROJECT_ID } from '@/config/wagmi'
 
 interface WalletModalProps {
   isOpen: boolean
@@ -62,9 +64,9 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
     }> = []
 
     if (mobile) {
-      // No mobile: sempre mostrar opções, não filtrar por "installed"
-      // WalletConnect é sempre a opção principal se disponível
-      if (hasWalletConnect && wcConnector) {
+      // On mobile: WalletConnect is the primary option
+      if (hasWalletConnect && wcConnector && WALLETCONNECT_PROJECT_ID) {
+        // Main WalletConnect option
         list.push({
           id: 'walletconnect',
           name: 'WalletConnect',
@@ -72,19 +74,19 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           installed: true,
           connector: wcConnector,
           type: 'walletConnect',
-          mobileLabel: 'Abrir carteira',
+          mobileLabel: 'Open your installed wallet',
         })
 
-        // No mobile, todas as carteiras abrem via WalletConnect
-        // Não checamos instalação (apps mobile não expõem window.ethereum)
+        // Wallet-specific options via WalletConnect
+        // These will open the specific wallet app via deep link
         list.push({
           id: 'metamask-wc',
           name: 'MetaMask',
           recommended: false,
-          installed: true, // Sempre disponível via WalletConnect
+          installed: true,
           connector: wcConnector,
           type: 'walletConnect',
-          mobileLabel: 'Abrirá via WalletConnect',
+          mobileLabel: 'Open via WalletConnect',
         })
 
         list.push({
@@ -94,7 +96,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           installed: true,
           connector: wcConnector,
           type: 'walletConnect',
-          mobileLabel: 'Abrirá via WalletConnect',
+          mobileLabel: 'Open via WalletConnect',
         })
 
         list.push({
@@ -104,10 +106,9 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           installed: true,
           connector: wcConnector,
           type: 'walletConnect',
-          mobileLabel: 'Abrirá via WalletConnect',
+          mobileLabel: 'Open via WalletConnect',
         })
 
-        // Rabby também via WalletConnect
         list.push({
           id: 'rabby-wc',
           name: 'Rabby Wallet',
@@ -115,24 +116,10 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           installed: true,
           connector: wcConnector,
           type: 'walletConnect',
-          mobileLabel: 'Abrirá via WalletConnect',
+          mobileLabel: 'Open via WalletConnect',
         })
-      } else {
-        // Se WalletConnect não estiver disponível, ainda mostrar opções genéricas
-        // Isso não deveria acontecer em produção, mas garante que o modal não fique vazio
-        const injectedConnector = connectors.find(c => c.type === 'injected')
-        if (injectedConnector) {
-          list.push({
-            id: 'injected-mobile',
-            name: 'Connect Wallet',
-            recommended: true,
-            installed: true,
-            connector: injectedConnector,
-            type: 'injected',
-            mobileLabel: 'Use seu navegador',
-          })
-        }
       }
+      // If WalletConnect is not configured, list will be empty and show error message
     } else {
       // Desktop: lógica original (detectar instalação de extensões)
       const hasMetaMask = isInstalled((p) => Boolean(p?.isMetaMask))
@@ -224,16 +211,23 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
   if (!isOpen) return null
 
   const handleConnect = async (wallet: typeof wallets[0]) => {
-    // No mobile, não filtrar por installed (sempre permitir tentar conectar)
-    if (!wallet.connector) return
+    if (!wallet.connector) {
+      toast.error('Wallet connector not available')
+      return
+    }
     if (!mobile && !wallet.installed) return
     
     try {
       await connect({ connector: wallet.connector })
       onClose()
-    } catch (err) {
-      // se falhar, não fecha o modal (melhor UX)
+    } catch (err: any) {
+      // Don't close modal on error (better UX)
+      const errorMessage = err?.message || err?.toString() || 'Unknown error'
+      const shortReason = errorMessage.length > 50 
+        ? errorMessage.substring(0, 50) + '...' 
+        : errorMessage
       console.error('Wallet connect error:', err)
+      toast.error(`Connection failed: ${shortReason}`)
     }
   }
 
@@ -271,7 +265,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           {mobile && wallets.length > 0 && (
             <div className="mb-4 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
               <p className="text-sm text-cyan-300">
-                No celular, use WalletConnect para abrir sua carteira instalada
+                On mobile, use WalletConnect to open your installed wallet
               </p>
             </div>
           )}
@@ -279,8 +273,18 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
           <div className="space-y-3">
             {wallets.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
-                <p>No wallets available</p>
-                {mobile ? (
+                <p className="font-semibold text-red-400 mb-2">WalletConnect is not configured</p>
+                {!WALLETCONNECT_PROJECT_ID ? (
+                  <>
+                    <p className="text-sm mb-2">Missing VITE_WALLETCONNECT_PROJECT_ID environment variable.</p>
+                    <p className="text-xs text-slate-500">
+                      Please configure it in Vercel → Settings → Environment Variables
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Create a project at https://cloud.walletconnect.com
+                    </p>
+                  </>
+                ) : mobile ? (
                   <p className="text-sm mt-2">WalletConnect is required for mobile</p>
                 ) : (
                   <p className="text-sm mt-2">Please install a wallet extension</p>
