@@ -50,6 +50,28 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const [connectError, setConnectError] = useState<string | null>(null)
   const [walletConnectDisabled, setWalletConnectDisabled] = useState(false)
 
+  // Function to reset WalletConnect circuit breaker
+  const resetWalletConnectBreaker = () => {
+    try {
+      localStorage.removeItem('WALLETCONNECT_DISABLED')
+      localStorage.removeItem('walletconnect_disabled')
+      localStorage.removeItem('wc_disabled')
+      sessionStorage.removeItem('walletconnect_disabled')
+      sessionStorage.removeItem('wc_disabled')
+    } catch (err) {
+      console.error('Error resetting circuit breaker:', err)
+    }
+    
+    // Clear local state
+    setConnectError(null)
+    setWalletConnectDisabled(false)
+    
+    // Force re-render to update connectors
+    if (typeof window !== 'undefined') {
+      window.location.reload()
+    }
+  }
+
   // Check circuit breaker flag on mount and when modal opens
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -355,12 +377,15 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
               <p className="text-sm font-medium text-red-300 mb-1">
                 WalletConnect disabled
               </p>
-              <p className="text-xs text-red-200/80">
+              <p className="text-xs text-red-200/80 mb-3">
                 WalletConnect failed on this device. Use MetaMask in-app browser or another wallet.
               </p>
-              <p className="text-xs text-red-200/60 mt-1">
-                You can re-enable by clearing the site cache (Settings → Clear browsing data).
-              </p>
+              <button
+                onClick={resetWalletConnectBreaker}
+                className="px-4 py-2 rounded border border-red-500/50 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors text-sm font-medium"
+              >
+                Try again
+              </button>
             </div>
           )}
           
@@ -402,12 +427,15 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
                   <>
                     <p className="font-semibold text-red-400 mb-2">WalletConnect Disabled</p>
                     <p className="text-sm mb-2">WalletConnect failed on this device.</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 mb-3">
                       Use MetaMask in-app browser or another wallet.
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Clear site cache to re-enable WalletConnect.
-                    </p>
+                    <button
+                      onClick={resetWalletConnectBreaker}
+                      className="px-4 py-2 rounded border border-red-500/50 bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors text-sm font-medium"
+                    >
+                      Try again
+                    </button>
                   </>
                 ) : !WALLETCONNECT_PROJECT_ID ? (
                   <>

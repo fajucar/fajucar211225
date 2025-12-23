@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAccount, usePublicClient } from 'wagmi'
 import { getAddress } from 'viem'
 import { CONTRACT_ADDRESSES } from '@/config/contracts'
-import { Loader2, RefreshCw, ExternalLink, Copy, CheckCircle2, Image as ImageIcon, Info, Wallet } from 'lucide-react'
+import { Loader2, RefreshCw, ExternalLink, Copy, CheckCircle2, Image as ImageIcon, Info } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useWalletModal } from '@/contexts/WalletModalContext'
 import FajuARC_ABI from '@/abis/FajuARC.json'
@@ -41,6 +41,12 @@ export function MyNFTsPage() {
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const [showImportInstructions, setShowImportInstructions] = useState(false)
+
+  // Detect mobile
+  const isMobile =
+    typeof window !== 'undefined' &&
+    (window.matchMedia?.('(pointer: coarse)')?.matches ||
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent))
 
   // Priorizar VITE_ARC_COLLECTION_ADDRESS, fallback para VITE_GIFT_CARD_NFT_ADDRESS
   const arcCollectionEnv = import.meta.env.VITE_ARC_COLLECTION_ADDRESS
@@ -361,20 +367,36 @@ export function MyNFTsPage() {
     }
   }
 
+  // Gate: não auto-conectar, mostrar tela gated
   if (!isConnected) {
     return (
-      <div className="max-w-6xl mx-auto py-12 px-4">
-        <div className="bg-slate-900/50 border border-cyan-500/20 rounded-2xl p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">My NFTs</h2>
-          <p className="text-slate-400 mb-6">Connect your wallet to view your NFTs</p>
+      <div className="max-w-xl mx-auto p-4">
+        <h1 className="text-xl font-semibold mb-2">My NFTs</h1>
+        <p className="opacity-80 mb-4">
+          Connect your wallet to view your NFTs.
+        </p>
+
+        <div className="flex gap-2">
           <button
-            onClick={openModal}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 rounded-lg text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            onClick={() => openModal?.()}
           >
-            <Wallet className="w-5 h-5" />
             Connect Wallet
           </button>
+
+          <a 
+            className="px-4 py-2 rounded border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors" 
+            href="/"
+          >
+            Go to Home
+          </a>
         </div>
+
+        {isMobile && (
+          <p className="text-sm opacity-70 mt-3">
+            On mobile, WalletConnect will open the MetaMask app externally.
+          </p>
+        )}
       </div>
     )
   }
