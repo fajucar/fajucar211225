@@ -47,11 +47,6 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
   // Recalcula quando o modal abre (garante detecção atualizada)
   const wallets = useMemo(() => {
-    const hasMetaMask = isInstalled((p) => Boolean(p?.isMetaMask))
-    const hasRabby = isInstalled((p) => Boolean(p?.isRabby))
-    const hasCoinbase = isInstalled((p) => Boolean(p?.isCoinbaseWallet))
-    const hasOkx = isInstalled((p) => Boolean(p?.isOkxWallet))
-
     // Encontrar WalletConnect connector
     const wcConnector = connectors.find(c => c.type === 'walletConnect')
     const hasWalletConnect = !!wcConnector
@@ -63,95 +58,141 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
       installed: boolean
       connector: any
       type: 'injected' | 'walletConnect'
+      mobileLabel?: string // Label específico para mobile
     }> = []
 
-    // No mobile, WalletConnect primeiro (recomendado)
-    if (mobile && hasWalletConnect) {
-      list.push({
-        id: 'walletconnect',
-        name: 'WalletConnect',
-        recommended: true,
-        installed: true,
-        connector: wcConnector,
-        type: 'walletConnect',
-      })
-    }
+    if (mobile) {
+      // No mobile: WalletConnect é sempre a opção principal
+      if (hasWalletConnect) {
+        list.push({
+          id: 'walletconnect',
+          name: 'WalletConnect',
+          recommended: true,
+          installed: true,
+          connector: wcConnector,
+          type: 'walletConnect',
+          mobileLabel: 'Abrir carteira',
+        })
+      }
 
-    // Injected wallets
-    if (hasMetaMask) {
-      const mmConnector = connectors.find(c => c.id === 'injected' || c.name === 'MetaMask')
+      // No mobile, não checamos instalação de extensões (apps mobile não expõem isso)
+      // Mas oferecemos opções para abrir via WalletConnect
+      
+      // MetaMask via WalletConnect
       list.push({
-        id: 'metamask',
+        id: 'metamask-wc',
         name: 'MetaMask',
-        recommended: !mobile && hasMetaMask,
-        installed: hasMetaMask,
-        connector: mmConnector,
-        type: 'injected',
-      })
-    }
-
-    if (hasRabby) {
-      const rbConnector = connectors.find(c => c.id === 'injected' || c.name === 'Rabby')
-      list.push({
-        id: 'rabby',
-        name: 'Rabby Wallet',
         recommended: false,
-        installed: hasRabby,
-        connector: rbConnector,
-        type: 'injected',
+        installed: true, // Sempre disponível via WalletConnect
+        connector: wcConnector, // Usa WalletConnect para abrir
+        type: 'walletConnect',
+        mobileLabel: 'Abrir via WalletConnect',
       })
-    }
 
-    if (hasCoinbase) {
-      const cbConnector = connectors.find(c => c.id === 'injected' || c.name === 'Coinbase Wallet')
+      // Coinbase via WalletConnect
       list.push({
-        id: 'coinbase',
+        id: 'coinbase-wc',
         name: 'Coinbase Wallet',
         recommended: false,
-        installed: hasCoinbase,
-        connector: cbConnector,
-        type: 'injected',
+        installed: true,
+        connector: wcConnector,
+        type: 'walletConnect',
+        mobileLabel: 'Abrir via WalletConnect',
       })
-    }
 
-    if (hasOkx) {
-      const okxConnector = connectors.find(c => c.id === 'injected' || c.name === 'OKX Wallet')
+      // OKX via WalletConnect
       list.push({
-        id: 'okx',
+        id: 'okx-wc',
         name: 'OKX Wallet',
-        recommended: false,
-        installed: hasOkx,
-        connector: okxConnector,
-        type: 'injected',
-      })
-    }
-
-    // WalletConnect no desktop (depois dos injected)
-    if (!mobile && hasWalletConnect) {
-      list.push({
-        id: 'walletconnect',
-        name: 'WalletConnect',
         recommended: false,
         installed: true,
         connector: wcConnector,
         type: 'walletConnect',
+        mobileLabel: 'Abrir via WalletConnect',
       })
-    }
+    } else {
+      // Desktop: lógica original (detectar instalação de extensões)
+      const hasMetaMask = isInstalled((p) => Boolean(p?.isMetaMask))
+      const hasRabby = isInstalled((p) => Boolean(p?.isRabby))
+      const hasCoinbase = isInstalled((p) => Boolean(p?.isCoinbaseWallet))
+      const hasOkx = isInstalled((p) => Boolean(p?.isOkxWallet))
 
-    // Fallback: se existir window.ethereum mas nenhuma flag foi detectada
-    const hasAnyInjected = getInjectedProviders().length > 0
-    const noneDetected = list.every((w) => w.type !== 'injected' || !w.installed)
+      // Injected wallets no desktop
+      if (hasMetaMask) {
+        const mmConnector = connectors.find(c => c.id === 'injected' || c.name === 'MetaMask')
+        list.push({
+          id: 'metamask',
+          name: 'MetaMask',
+          recommended: true,
+          installed: hasMetaMask,
+          connector: mmConnector,
+          type: 'injected',
+        })
+      }
 
-    if (hasAnyInjected && noneDetected) {
-      const injectedConnector = connectors.find(c => c.type === 'injected')
-      list.push({
-        id: 'injected',
-        name: 'Injected Wallet (Browser)',
-        recommended: false,
-        installed: true,
-        connector: injectedConnector,
-        type: 'injected',
-      })
+      if (hasRabby) {
+        const rbConnector = connectors.find(c => c.id === 'injected' || c.name === 'Rabby')
+        list.push({
+          id: 'rabby',
+          name: 'Rabby Wallet',
+          recommended: false,
+          installed: hasRabby,
+          connector: rbConnector,
+          type: 'injected',
+        })
+      }
+
+      if (hasCoinbase) {
+        const cbConnector = connectors.find(c => c.id === 'injected' || c.name === 'Coinbase Wallet')
+        list.push({
+          id: 'coinbase',
+          name: 'Coinbase Wallet',
+          recommended: false,
+          installed: hasCoinbase,
+          connector: cbConnector,
+          type: 'injected',
+        })
+      }
+
+      if (hasOkx) {
+        const okxConnector = connectors.find(c => c.id === 'injected' || c.name === 'OKX Wallet')
+        list.push({
+          id: 'okx',
+          name: 'OKX Wallet',
+          recommended: false,
+          installed: hasOkx,
+          connector: okxConnector,
+          type: 'injected',
+        })
+      }
+
+      // WalletConnect no desktop (depois dos injected)
+      if (hasWalletConnect) {
+        list.push({
+          id: 'walletconnect',
+          name: 'WalletConnect',
+          recommended: false,
+          installed: true,
+          connector: wcConnector,
+          type: 'walletConnect',
+        })
+      }
+
+      // Fallback: se existir window.ethereum mas nenhuma flag foi detectada
+      const hasAnyInjected = getInjectedProviders().length > 0
+      const noneDetected = list.every((w) => w.type !== 'injected' || !w.installed)
+
+      if (hasAnyInjected && noneDetected) {
+        const injectedConnector = connectors.find(c => c.type === 'injected')
+        list.push({
+          id: 'injected',
+          name: 'Injected Wallet (Browser)',
+          recommended: false,
+          installed: true,
+          connector: injectedConnector,
+          type: 'injected',
+        })
+      }
     }
 
     return list
@@ -202,11 +243,23 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
         {/* Content - scrollable */}
         <div className={`flex-1 overflow-y-auto ${mobile ? 'p-4' : 'p-4'}`}>
+          {mobile && wallets.length > 0 && (
+            <div className="mb-4 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+              <p className="text-sm text-cyan-300">
+                No celular, use WalletConnect para abrir sua carteira instalada
+              </p>
+            </div>
+          )}
+          
           <div className="space-y-3">
             {wallets.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
                 <p>No wallets available</p>
-                <p className="text-sm mt-2">Please install a wallet extension</p>
+                {mobile ? (
+                  <p className="text-sm mt-2">WalletConnect is required for mobile</p>
+                ) : (
+                  <p className="text-sm mt-2">Please install a wallet extension</p>
+                )}
               </div>
             ) : (
               wallets.map((w) => (
@@ -233,11 +286,13 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
                         )}
                       </div>
                       <span className="text-sm text-slate-400">
-                        {w.installed
-                          ? w.type === 'walletConnect' 
-                            ? 'Connect via QR code or deep link'
-                            : 'Installed'
-                          : 'Not installed'}
+                        {mobile && w.mobileLabel
+                          ? w.mobileLabel
+                          : w.installed
+                            ? w.type === 'walletConnect' 
+                              ? 'Connect via QR code or deep link'
+                              : 'Installed'
+                            : 'Not installed'}
                       </span>
                     </div>
 
