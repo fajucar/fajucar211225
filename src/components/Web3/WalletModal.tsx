@@ -211,14 +211,31 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
   if (!isOpen) return null
 
   const handleConnect = async (wallet: typeof wallets[0]) => {
-    if (!wallet.connector) {
+    // On mobile, always use WalletConnect connector
+    let connectorToUse = wallet.connector
+    
+    if (mobile) {
+      const wcConnector = connectors.find(c => c.type === 'walletConnect')
+      if (wcConnector) {
+        connectorToUse = wcConnector
+        console.log('[WalletModal] Mobile: Using WalletConnect connector for', wallet.name)
+      } else {
+        console.error('[WalletModal] Mobile: WalletConnect connector not found!')
+        toast.error('WalletConnect is not available. Please configure VITE_WALLETCONNECT_PROJECT_ID')
+        return
+      }
+    }
+    
+    if (!connectorToUse) {
       toast.error('Wallet connector not available')
       return
     }
     if (!mobile && !wallet.installed) return
     
     try {
-      await connect({ connector: wallet.connector })
+      console.log('[WalletModal] Connecting with connector:', connectorToUse.type, connectorToUse.id)
+      await connect({ connector: connectorToUse })
+      console.log('[WalletModal] Connection successful')
       onClose()
     } catch (err: any) {
       // Don't close modal on error (better UX)
@@ -226,7 +243,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
       const shortReason = errorMessage.length > 50 
         ? errorMessage.substring(0, 50) + '...' 
         : errorMessage
-      console.error('Wallet connect error:', err)
+      console.error('[WalletModal] Wallet connect error:', err)
       toast.error(`Connection failed: ${shortReason}`)
     }
   }

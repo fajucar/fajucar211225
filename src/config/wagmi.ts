@@ -28,13 +28,13 @@ if (!walletConnectProjectId) {
 const walletConnectConnector = walletConnectProjectId
   ? walletConnect({
       projectId: walletConnectProjectId,
+      showQrModal: true,
       metadata: {
         name: 'Arc Network',
-        description: 'Blockchain with deterministic finality',
-        url: typeof window !== 'undefined' ? window.location.origin : 'https://arc.network',
-        icons: [typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : 'https://arc.network/logo.png'],
+        description: 'Arc minter dApp',
+        url: 'https://www.fajucar.xyz',
+        icons: ['https://www.fajucar.xyz/favicon.ico'],
       },
-      showQrModal: true,
     })
   : null
 
